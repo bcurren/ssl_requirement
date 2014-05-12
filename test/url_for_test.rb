@@ -24,7 +24,7 @@ class UrlRewriterTest < Test::Unit::TestCase
     SslRequirement.ssl_host = nil
     SslRequirement.non_ssl_host = nil
     
-    puts @url_rewriter.to_s
+    # puts @url_rewriter.to_s
   end
 
   def test_rewrite_secure_false
@@ -138,5 +138,32 @@ class UrlRewriterTest < Test::Unit::TestCase
                                    :only_path => true))
     SslRequirement.non_ssl_host = nil
   end
+  
+  # tests for ssl_host overriding with Procs
+  
+  def test_rewrite_secure_with_ssl_host_proc
+    SslRequirement.disable_ssl_check = false
+    SslRequirement.ssl_host = Proc.new do
+      @ssl_host_override
+    end
+    assert_equal("https://#{@ssl_host_override}/c/a",
+                 @rewriter.rewrite(:controller => 'c', :action => 'a', 
+                                   :secure => true))
+    SslRequirement.ssl_host = nil
+  end
 
+  def test_rewrite_non_secure_with_non_ssl_host_proc
+    SslRequirement.disable_ssl_check = false
+    SslRequirement.non_ssl_host = Proc.new do
+      @non_ssl_host_override
+    end
+    # with secure option
+    assert_equal("http://#{@non_ssl_host_override}/c/a",
+                 @rewriter.rewrite(:controller => 'c', :action => 'a',
+                                   :secure => false))
+    # without secure option
+    assert_equal("http://#{@non_ssl_host_override}/c/a",
+                 @rewriter.rewrite(:controller => 'c', :action => 'a'))
+    SslRequirement.non_ssl_host = nil
+  end
 end
